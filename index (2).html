@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Peyser's Bistro</title>
+    <style>
+        /* ==========================================================================
+           1. 极致极简暗黑风系统 & 高奢背景氛围动效
+           ========================================================================== */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+            background: #050507; 
+            min-height: 100vh;
+            color: #f5f5f7;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 110px;
+            position: relative;
+        }
+
+        /* ✨ 背景高奢动态极光 Ambient Glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -20%;
+            width: 140vw;
+            height: 140vh;
+            background: radial-gradient(circle at 50% 30%, rgba(255, 149, 0, 0.08), transparent 60%),
+                        radial-gradient(circle at 80% 80%, rgba(120, 50, 255, 0.05), transparent 50%);
+            z-index: -1;
+            animation: ambientMove 12s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes ambientMove {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.7; }
+            50% { transform: translate(-3%, 2%) scale(1.05); opacity: 1; }
+            100% { transform: translate(3%, -2%) scale(0.95); opacity: 0.8; }
+        }
+
+        /* 文字逐渐显现动画 */
+        @keyframes heroTextReveal {
+            from { opacity: 0; transform: translateY(24px); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+        }
+
+        @keyframes appleFadeIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(6px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 149, 0, 0.15); }
+            50% { box-shadow: 0 0 35px rgba(255, 149, 0, 0.35); }
+        }
+
+        /* Toast 通知框 */
+        #toast-notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); z-index: 30000;
+            background: rgba(255, 149, 0, 0.15); border: 1px solid rgba(255, 149, 0, 0.3);
+            color: #ffb340; font-weight: 500; padding: 10px 22px; border-radius: 30px; font-size: 0.8rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            opacity: 0; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none; letter-spacing: 0.05em;
+        }
+        #toast-notification.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* ==========================================================================
+           2. 首屏 (Hero Screen)
+           ========================================================================== */
+        #hero-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050507;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 10000; text-align: center; padding: 20px;
+            transition: all 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+        #hero-screen.slide-out {
+            opacity: 0; transform: translateY(-30px) scale(0.96); filter: blur(20px); pointer-events: none;
+        }
+
+        .hero-logo {
+            font-size: 3.2rem; margin-bottom: 20px;
+            animation: heroTextReveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            filter: drop-shadow(0 0 25px rgba(255, 149, 0, 0.35));
+        }
+        .hero-title {
+            font-size: 2.3rem; font-weight: 800; color: #ffffff; letter-spacing: -0.03em; margin-bottom: 8px;
+            opacity: 0; animation: heroTextReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+        }
+        .hero-subtitle {
+            font-size: 0.9rem; color: #86868b; max-width: 290px; margin-bottom: 40px; font-weight: 400; line-height: 1.5;
+            opacity: 0; animation: heroTextReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+        }
+        
+        .start-order-btn {
+            background: #ffffff; color: #000000; border: none;
+            padding: 14px 44px; border-radius: 30px; font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0; animation: heroTextReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+        }
+        .start-order-btn:active { transform: scale(0.94); opacity: 0.85; }
+
+        /* ==========================================================================
+           3. 吸顶 Header & 分类
+           ========================================================================== */
+        .main-container { max-width: 680px; margin: 0 auto; padding: 0 16px; width: 100%; }
+
+        .sticky-header-wrapper {
+            position: sticky; top: 0; z-index: 500;
+            background: rgba(5, 5, 7, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            margin: 0 -16px; padding: 16px 20px 10px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .site-header { display: flex; justify-content: space-between; align-items: center; }
+        .site-info h1 { font-size: 1.4rem; font-weight: 700; color: #ffffff; transition: all 0.3s ease; }
+        .de-time-badge { font-size: 0.75rem; color: #ff9500; font-family: -apple-system, BlinkMacSystemFont, monospace; opacity: 0.9; }
+
+        body.scrolled .site-info h1 { transform: scale(0.85); transform-origin: left center; }
+
+        /* 横向分类导航 */
+        .category-nav { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
+        .category-nav::-webkit-scrollbar { display: none; }
+        .nav-tab { padding: 6px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; color: #86868b; font-size: 0.8rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .nav-tab.active { color: #000; background: #ffffff; border-color: #ffffff; font-weight: 600; }
+
+        .page-content { padding: 12px 0; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: appleFadeIn 0.3s ease-out; }
+
+        /* ==========================================================================
+           4. 菜品卡片
+           ========================================================================== */
+        .menu-grid { display: flex; flex-direction: column; gap: 12px; }
+        .menu-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: all 0.2s; backdrop-filter: blur(10px);
+        }
+        .menu-card:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.05); }
+        .dish-info { flex: 1; padding-right: 12px; }
+        .dish-title { font-size: 0.95rem; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 6px; }
+        .tag-badge { font-size: 0.6rem; background: rgba(255, 149, 0, 0.12); color: #ff9500; border: 1px solid rgba(255, 149, 0, 0.25); padding: 1px 6px; border-radius: 4px; font-weight: 400; }
+        .dish-desc { font-size: 0.78rem; color: #6e6e73; margin-top: 4px; line-height: 1.35; }
+        
+        .add-action-btn {
+            width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 1.1rem; display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0; transition: all 0.2s;
+        }
+        .menu-card:hover .add-action-btn { background: #ffffff; color: #000; }
+
+        /* 购物车栏 */
+        .cart-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 32px); max-width: 640px; padding: 10px 16px;
+            background: rgba(20, 20, 24, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px;
+            display: flex; justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .cart-count { background: #ff9500; color: #000; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+        .checkout-btn { background: #ffffff; color: #000; border: none; padding: 8px 18px; border-radius: 14px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .checkout-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+        /* ==========================================================================
+           5. 平铺标签定制 Modal (Pill Select)
+           ========================================================================== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.82); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            display: flex; justify-content: center; align-items: center; z-index: 20000; padding: 20px;
+            opacity: 0; pointer-events: none; transition: all 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-card {
+            background: #121215; border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px; padding: 24px; max-width: 420px; width: 100%;
+            transform: scale(0.95); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+
+        .option-group-title { font-size: 0.78rem; color: #86868b; margin: 12px 0 6px 0; font-weight: 500; }
+        .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .pill-item {
+            padding: 8px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px; font-size: 0.8rem; color: #ccc; cursor: pointer; transition: all 0.2s;
+        }
+        .pill-item.active { background: #ffffff; color: #000000; border-color: #ffffff; font-weight: 600; }
+
+        .modal-btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+        .btn-cancel { background: rgba(255,255,255,0.06); color: #86868b; }
+        .btn-confirm { background: #ffffff; color: #000000; }
+
+        /* 提交过程动画 */
+        .submitting-loader {
+            width: 40px; height: 40px; border: 2px solid rgba(255,149,0,0.1);
+            border-top: 2px solid #ff9500; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 15px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .progress-bar-container { width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+        .progress-bar-fill { height: 100%; width: 0%; background: #ff9500; transition: width 1.5s ease-in-out; }
+
+        /* ✨ 极简 Summary 票据 */
+        .receipt-card {
+            background: #09090b; border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px; padding: 26px 20px; position: relative; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9); animation: pulseGlow 4s infinite ease-in-out;
+        }
+
+        .receipt-brand { font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+        .receipt-date-display { font-size: 0.75rem; color: #86868b; font-family: monospace; margin-top: 4px; }
+
+        .receipt-screenshot-banner {
+            margin: 16px 0 14px 0; padding: 12px; background: rgba(255, 149, 0, 0.08);
+            border: 1px dashed rgba(255, 149, 0, 0.35); border-radius: 12px;
+            color: #ff9500; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .summary-list { text-align: left; margin: 12px 0; max-height: 240px; overflow-y: auto; padding-right: 4px; }
+        .summary-item { padding: 10px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+        .summary-item-name { font-weight: 600; color: #f5f5f7; font-size: 0.9rem; }
+        .summary-item-flavor { color: #86868b; font-size: 0.75rem; margin-top: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast 通知框 -->
+    <div id="toast-notification">
+        <span id="toast-message">已加入点单</span>
+    </div>
+
+    <!-- 1. 首屏 -->
+    <div id="hero-screen">
+        <div class="hero-logo">🍷</div>
+        <h1 class="hero-title">Peyser's Bistro</h1>
+        <p class="hero-subtitle">今夜私房独家点单体验 · 享用专属美味</p>
+        <button class="start-order-btn" onclick="startOrderFlow()">开始点单 →</button>
+    </div>
+
+    <!-- 2. 主体容器 -->
+    <div class="main-container">
+        
+        <!-- 吸顶 Header 与分类导航 -->
+        <div class="sticky-header-wrapper">
+            <header class="site-header">
+                <div class="site-info">
+                    <h1>Peyser's Bistro</h1>
+                </div>
+                <div class="de-time-badge" id="de-date-time">2026-07-22 00:00:00</div>
+            </header>
+
+            <!-- 横向滑动分类导航栏 -->
+            <nav class="category-nav">
+                <button class="nav-tab active" id="tab-maocai" onclick="switchTab('maocai')">🍲 特色冒菜 (10款)</button>
+                <button class="nav-tab" id="tab-mains" onclick="switchTab('mains')">🥩 精致主菜</button>
+                <button class="nav-tab" id="tab-snacks" onclick="switchTab('snacks')">🍟 经典小吃</button>
+                <button class="nav-tab" id="tab-drinks" onclick="switchTab('drinks')">☕ 特调饮品</button>
+            </nav>
+        </div>
+
+        <!-- 3. 菜品列表 -->
+        <main class="page-content">
+            
+            <!-- 🍲 分类 1：10 种特色冒菜 -->
+            <div id="panel-maocai" class="tab-panel active">
+                <div class="menu-grid">
+                    <!-- 1 -->
+                    <div class="menu-card" onclick="openCustomModal('成都川香招牌牛肉冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">1. 成都川香招牌牛肉冒菜 <span class="tag-badge">必点</span></div>
+                            <div class="dish-desc">嫩滑牛肉片、午餐肉、藕片与木耳，红油底料鲜香浓郁。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 2 -->
+                    <div class="menu-card" onclick="openCustomModal('藤椒肥牛酸汤冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">2. 藤椒肥牛酸汤冒菜 <span class="tag-badge">推荐</span></div>
+                            <div class="dish-desc">清爽酸汤搭配原切肥牛与金针菇，爽麻清香。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 3 -->
+                    <div class="menu-card" onclick="openCustomModal('主厨纯享全素健康冒菜', 'maocai_vege')">
+                        <div class="dish-info">
+                            <div class="dish-title">3. 主厨纯享全素健康冒菜</div>
+                            <div class="dish-desc">时令绿叶菜、豆腐干、香菇与土豆片，高汤慢煨。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 4 -->
+                    <div class="menu-card" onclick="openCustomModal('黑毛猪梅花肉冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">4. 黑毛猪梅花肉冒菜</div>
+                            <div class="dish-desc">肥瘦相间梅花肉片，吸饱麻辣汤汁，醇厚入味。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 5 -->
+                    <div class="menu-card" onclick="openCustomModal('海鲜荟萃大虾冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">5. 海鲜荟萃大虾冒菜</div>
+                            <div class="dish-desc">开背大虾、鱿鱼卷与墨鱼丸，鲜上加鲜。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 6 -->
+                    <div class="menu-card" onclick="openCustomModal('老成都贡菜千层肚冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">6. 老成都贡菜千层肚冒菜 <span class="tag-badge">地道</span></div>
+                            <div class="dish-desc">爽脆千层肚搭配嘎嘣脆贡菜，地道川味口感。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 7 -->
+                    <div class="menu-card" onclick="openCustomModal('秘制香辣鸭血豆腐冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">7. 秘制香辣鸭血豆腐冒菜</div>
+                            <div class="dish-desc">嫩滑鲜鸭血与老豆腐，吸满汤汁，热气腾腾。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 8 -->
+                    <div class="menu-card" onclick="openCustomModal('番茄浓汤肥牛冒菜', 'maocai_vege')">
+                        <div class="dish-info">
+                            <div class="dish-title">8. 番茄浓汤肥牛冒菜</div>
+                            <div class="dish-desc">日照熟透番茄熬制浓汤，酸甜开胃，不辣首选。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 9 -->
+                    <div class="menu-card" onclick="openCustomModal('全蛋面主食丰盛冒菜', 'maocai_full')">
+                        <div class="dish-info">
+                            <div class="dish-title">9. 全蛋面主食丰盛冒菜</div>
+                            <div class="dish-desc">含有手工蛋面、鹌鹑蛋与丰富配菜，满足感十足。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <!-- 10 -->
+                    <div class="menu-card" onclick="openCustomModal('私房黑松露菌菇冒菜', 'maocai_vege')">
+                        <div class="dish-info">
+                            <div class="dish-title">10. 私房黑松露菌菇冒菜 <span class="tag-badge">限定</span></div>
+                            <div class="dish-desc">多重野生菌菇融入黑松露酱提鲜，高奢极简风。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🥩 分类 2：主菜类 -->
+            <div id="panel-mains" class="tab-panel">
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="openCustomModal('M5和牛眼肉牛排', 'steak')">
+                        <div class="dish-info">
+                            <div class="dish-title">M5和牛眼肉牛排 <span class="tag-badge">极品</span></div>
+                            <div class="dish-desc">低温慢煮果木炙烤。点击平铺选择熟度。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <div class="menu-card" onclick="addSimpleItem('法式香煎银鳕鱼', '默认搭配柠檬香草酱')">
+                        <div class="dish-info">
+                            <div class="dish-title">法式香煎银鳕鱼</div>
+                            <div class="dish-desc">表皮金黄酥脆，肉质细腻，配法式柠檬奶油酱。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🍟 分类 3：小吃类 -->
+            <div id="panel-snacks" class="tab-panel">
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="addSimpleItem('松露黑胡椒薯条', '标准搭配松露酱')">
+                        <div class="dish-info">
+                            <div class="dish-title">松露黑胡椒薯条</div>
+                            <div class="dish-desc">现炸粗薯淋上黑松露酱与帕玛森芝士碎。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <div class="menu-card" onclick="addSimpleItem('日式酥炸鸡块', '配日式蛋黄酱')">
+                        <div class="dish-info">
+                            <div class="dish-title">日式酥炸鸡块</div>
+                            <div class="dish-desc">外酥里嫩，多汁鲜美，搭配日式丘比蛋黄酱。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ☕ 分类 4：饮品类 -->
+            <div id="panel-drinks" class="tab-panel">
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="openCustomModal('Peyser 特调冷萃', 'coffee')">
+                        <div class="dish-info">
+                            <div class="dish-title">Peyser 特调冷萃 <span class="tag-badge">特调</span></div>
+                            <div class="dish-desc">埃塞俄比亚浅焙豆慢速冷萃。点击定制冰块与糖度。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                    <div class="menu-card" onclick="addSimpleItem('气泡接骨木花特饮', '冰镇气泡')">
+                        <div class="dish-info">
+                            <div class="dish-title">气泡接骨木花特饮</div>
+                            <div class="dish-desc">清爽解腻，带有淡淡花香与青苹果酸甜。</div>
+                        </div>
+                        <div class="add-action-btn">＋</div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 4. 底部悬浮购物车栏 -->
+    <div class="cart-bar">
+        <div>
+            <span class="cart-count" id="cart-count">0</span>
+            <span style="font-size: 0.8rem; color: #86868b; margin-left: 6px;">已选菜品</span>
+        </div>
+        <button class="checkout-btn" onclick="openConfirmModal()">确认点单</button>
+    </div>
+
+    <!-- 弹窗 A：【平铺标签式定制 Modal】 -->
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-card">
+            <h3 id="custom-dish-name" style="color: #fff; margin-bottom: 8px; font-size: 1rem; font-weight: 600;">定制菜品</h3>
+            
+            <div id="custom-options-container">
+                <!-- 动态平铺按钮将渲染至此 -->
+            </div>
+
+            <div class="modal-btn-group">
+                <button class="modal-btn btn-cancel" onclick="closeCustomModal()">取消</button>
+                <button class="modal-btn btn-confirm" onclick="confirmCustomAddToCart()">确认加入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 B：【二次确认 Modal】 -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-card" style="text-align: center;">
+            <h3 style="color: #fff; margin-bottom: 6px; font-weight: 600;">确认提交点单？</h3>
+            <p style="font-size: 0.8rem; color: #6e6e73; margin-bottom: 16px;">提交后将生成独家截屏卡片</p>
+            <div class="modal-btn-group">
+                <button class="modal-btn btn-cancel" onclick="closeConfirmModal()">返回</button>
+                <button class="modal-btn btn-confirm" onclick="startOrderAnimationFlow()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 C：【提交过程酷炫动画 Modal】 -->
+    <div class="modal-overlay" id="submitting-anim-modal">
+        <div class="modal-card" style="text-align: center;">
+            <div id="submitting-state-1">
+                <div class="submitting-loader"></div>
+                <h3 style="color: #fff; font-size: 0.95rem; margin-top: 10px;">正在传输点单...</h3>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="anim-progress-fill"></div>
+                </div>
+            </div>
+
+            <div id="submitting-state-2" style="display: none; animation: appleFadeIn 0.4s ease-out;">
+                <div style="font-size: 3rem; margin-bottom: 6px;">🍳</div>
+                <h3 style="color: #ff9500; font-size: 1.05rem;">订单提交成功！</h3>
+                <p style="color: #86868b; font-size: 0.8rem; margin-top: 4px;">餐品正在准备中~</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 弹窗 D：✨ 极简卡片（只带日期与截屏提示） -->
+    <div class="modal-overlay" id="summary-modal">
+        <div class="modal-card receipt-card">
+            <div class="receipt-brand">Peyser's Bistro</div>
+            <!-- 订单日期显示 -->
+            <div class="receipt-date-display" id="receipt-date-val">DATE: 2026.07.22</div>
+            
+            <!-- 截屏提示文案 -->
+            <div class="receipt-screenshot-banner">
+                <span>📸</span>
+                <span>请截屏发送给 Peyser</span>
+            </div>
+
+            <div class="summary-list" id="summary-items-list">
+                <!-- 动态注入菜品列表 -->
+            </div>
+
+            <button class="modal-btn btn-cancel" style="width:100%; margin-top: 12px;" onclick="closeSummaryModal()">完成</button>
+        </div>
+    </div>
+
+    <script>
+        // 购物车与本地缓存
+        let cart = JSON.parse(localStorage.getItem('peyser_bistro_cart')) || [];
+        let currentCustomItem = null;
+        let selectedOptionsState = {};
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDeTime();
+            updateCartUI();
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 20) {
+                    document.body.classList.add('scrolled');
+                } else {
+                    document.body.classList.remove('scrolled');
+                }
+            });
+        });
+
+        function saveCartToStorage() {
+            localStorage.setItem('peyser_bistro_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function startOrderFlow() {
+            document.getElementById('hero-screen').classList.add('slide-out');
+        }
+
+        function updateDeTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'Europe/Berlin',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            };
+            document.getElementById('de-date-time').textContent = new Intl.DateTimeFormat('zh-CN', options).format(now);
+        }
+        setInterval(updateDeTime, 1000);
+
+        /* ==========================================================================
+           平铺标签式定制逻辑
+           ========================================================================== */
+        function openCustomModal(dishName, type) {
+            currentCustomItem = { dishName, type };
+            selectedOptionsState = {};
+            document.getElementById('custom-dish-name').textContent = dishName;
+            const container = document.getElementById('custom-options-container');
+            container.innerHTML = '';
+
+            let config = [];
+
+            if (type === 'maocai_full') {
+                config = [
+                    { key: '辣度', title: '辣度选择 (单选)', type: 'single', options: ['微辣', '中辣', '特辣'] },
+                    { key: '主食', title: '主食搭配 (单选)', type: 'single', options: ['米饭', '火锅面', '不要主食'] },
+                    { key: '忌口', title: '忌口偏好 (多选)', type: 'multi', options: ['不要葱', '不要蒜', '多要香菜'] }
+                ];
+            } else if (type === 'maocai_vege') {
+                config = [
+                    { key: '辣度', title: '辣度选择 (单选)', type: 'single', options: ['清汤', '微辣', '中辣'] },
+                    { key: '忌口', title: '忌口偏好 (多选)', type: 'multi', options: ['不要葱', '不要蒜', '多要香菜'] }
+                ];
+            } else if (type === 'steak') {
+                config = [
+                    { key: '熟度', title: '熟度选择 (单选)', type: 'single', options: ['三分熟', '五分熟', '七分熟'] }
+                ];
+            } else if (type === 'coffee') {
+                config = [
+                    { key: '冰块', title: '冰块选择 (单选)', type: 'single', options: ['正常冰', '少冰', '去冰'] },
+                    { key: '甜度', title: '甜度选择 (单选)', type: 'single', options: ['无糖', '微糖'] }
+                ];
+            }
+
+            config.forEach(group => {
+                const groupTitle = document.createElement('div');
+                groupTitle.className = 'option-group-title';
+                groupTitle.textContent = group.title;
+                container.appendChild(groupTitle);
+
+                const grid = document.createElement('div');
+                grid.className = 'pill-grid';
+
+                group.options.forEach((opt, idx) => {
+                    const pill = document.createElement('div');
+                    pill.className = 'pill-item';
+                    pill.textContent = opt;
+
+                    if (group.type === 'single' && idx === 0) {
+                        pill.classList.add('active');
+                        selectedOptionsState[group.key] = opt;
+                    }
+
+                    pill.onclick = () => {
+                        if (group.type === 'single') {
+                            grid.querySelectorAll('.pill-item').forEach(p => p.classList.remove('active'));
+                            pill.classList.add('active');
+                            selectedOptionsState[group.key] = opt;
+                        } else {
+                            pill.classList.toggle('active');
+                            if (!selectedOptionsState[group.key]) selectedOptionsState[group.key] = [];
+                            if (pill.classList.contains('active')) {
+                                selectedOptionsState[group.key].push(opt);
+                            } else {
+                                selectedOptionsState[group.key] = selectedOptionsState[group.key].filter(item => item !== opt);
+                            }
+                        }
+                    };
+                    grid.appendChild(pill);
+                });
+                container.appendChild(grid);
+            });
+
+            document.getElementById('custom-modal').classList.add('active');
+        }
+
+        function closeCustomModal() { document.getElementById('custom-modal').classList.remove('active'); }
+
+        function confirmCustomAddToCart() {
+            if (!currentCustomItem) return;
+            
+            let parts = [];
+            for (let k in selectedOptionsState) {
+                let val = selectedOptionsState[k];
+                if (Array.isArray(val)) {
+                    if (val.length > 0) parts.push(`${k}: ${val.join(',')}`);
+                } else if (val) {
+                    parts.push(`${k}: ${val}`);
+                }
+            }
+
+            const flavorStr = parts.length > 0 ? parts.join(' | ') : '标准制作';
+            cart.push({ name: currentCustomItem.dishName, flavor: flavorStr });
+            saveCartToStorage();
+            closeCustomModal();
+            showToast(`已加入：${currentCustomItem.dishName}`);
+        }
+
+        function addSimpleItem(name, flavor) {
+            cart.push({ name, flavor });
+            saveCartToStorage();
+            showToast(`已加入：${name}`);
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-count').textContent = cart.length;
+        }
+
+        /* ==========================================================================
+           确认弹窗与提交流程
+           ========================================================================== */
+        function openConfirmModal() {
+            if (cart.length === 0) { alert('点单为空'); return; }
+            document.getElementById('confirm-modal').classList.add('active');
+        }
+        function closeConfirmModal() { document.getElementById('confirm-modal').classList.remove('active'); }
+
+        function startOrderAnimationFlow() {
+            closeConfirmModal();
+            const animModal = document.getElementById('submitting-anim-modal');
+            const state1 = document.getElementById('submitting-state-1');
+            const state2 = document.getElementById('submitting-state-2');
+            const progress = document.getElementById('anim-progress-fill');
+
+            state1.style.display = 'block';
+            state2.style.display = 'none';
+            progress.style.width = '0%';
+            animModal.classList.add('active');
+
+            setTimeout(() => { progress.style.width = '100%'; }, 50);
+
+            setTimeout(() => {
+                state1.style.display = 'none';
+                state2.style.display = 'block';
+            }, 1400);
+
+            setTimeout(() => {
+                animModal.classList.remove('active');
+                showSummaryReceipt();
+            }, 2800);
+        }
+
+        function showSummaryReceipt() {
+            // 设置实时渲染的订单日期 (Format: YYYY.MM.DD)
+            const now = new Date();
+            const dateStr = now.getFullYear() + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + String(now.getDate()).padStart(2, '0');
+            document.getElementById('receipt-date-val').textContent = 'DATE: ' + dateStr;
+
+            const listContainer = document.getElementById('summary-items-list');
+            listContainer.innerHTML = '';
+
+            cart.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'summary-item';
+                div.innerHTML = `
+                    <div class="summary-item-name">${index + 1}. ${item.name}</div>
+                    <div class="summary-item-flavor">${item.flavor}</div>
+                `;
+                listContainer.appendChild(div);
+            });
+
+            // 自动清空购物车与缓存
+            cart = [];
+            saveCartToStorage();
+
+            document.getElementById('summary-modal').classList.add('active');
+        }
+
+        function closeSummaryModal() { document.getElementById('summary-modal').classList.remove('active'); }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notification');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById('panel-' + tabId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
