@@ -222,12 +222,24 @@
         .receipt-date-display { font-size: 0.75rem; color: #86868b; font-family: monospace; margin-top: 4px; }
 
         .receipt-screenshot-banner {
-            margin: 16px 0 14px 0; padding: 12px; background: rgba(255, 149, 0, 0.08);
+            margin: 16px 0 10px 0; padding: 12px; background: rgba(255, 149, 0, 0.08);
             border: 1px dashed rgba(255, 149, 0, 0.35); border-radius: 12px;
             color: #ff9500; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;
         }
 
-        .summary-list { text-align: left; margin: 12px 0; max-height: 240px; overflow-y: auto; padding-right: 4px; }
+        /* 快捷跳转社交按钮 */
+        .social-jump-group { display: flex; gap: 8px; margin-bottom: 14px; }
+        .social-btn {
+            flex: 1; padding: 9px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.78rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;
+            cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .social-btn-wechat { background: rgba(7, 193, 96, 0.12); color: #07c160; border-color: rgba(7, 193, 96, 0.3); }
+        .social-btn-wechat:active { background: rgba(7, 193, 96, 0.25); }
+        .social-btn-ins { background: rgba(225, 48, 108, 0.12); color: #e1306c; border-color: rgba(225, 48, 108, 0.3); }
+        .social-btn-ins:active { background: rgba(225, 48, 108, 0.25); }
+
+        .summary-list { text-align: left; margin: 12px 0; max-height: 200px; overflow-y: auto; padding-right: 4px; }
         .summary-item { padding: 10px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
         .summary-item-name { font-weight: 600; color: #f5f5f7; font-size: 0.9rem; }
         .summary-item-flavor { color: #86868b; font-size: 0.75rem; margin-top: 3px; }
@@ -477,7 +489,7 @@
         </div>
     </div>
 
-    <!-- 弹窗 D：✨ 极简卡片（只带日期与截屏提示） -->
+    <!-- 弹窗 D：✨ 极简卡片（快捷跳转微信/Ins） -->
     <div class="modal-overlay" id="summary-modal">
         <div class="modal-card receipt-card">
             <div class="receipt-brand">Peyser's Bistro</div>
@@ -487,7 +499,17 @@
             <!-- 截屏提示文案 -->
             <div class="receipt-screenshot-banner">
                 <span>📸</span>
-                <span>请截屏发送给 Peyser</span>
+                <span>请截图发送给 Peyser</span>
+            </div>
+
+            <!-- 快捷跳转按钮组 -->
+            <div class="social-jump-group">
+                <button class="social-btn social-btn-wechat" onclick="jumpToWeChat()">
+                    <span>💬</span> 打开微信
+                </button>
+                <button class="social-btn social-btn-ins" onclick="jumpToIns()">
+                    <span>📷</span> 打开 Instagram
+                </button>
             </div>
 
             <div class="summary-list" id="summary-items-list">
@@ -501,6 +523,7 @@
     <script>
         // 购物车与本地缓存
         let cart = JSON.parse(localStorage.getItem('peyser_bistro_cart')) || [];
+        let completedOrderList = []; // 保存当前提交完成的订单用于复制文本
         let currentCustomItem = null;
         let selectedOptionsState = {};
 
@@ -688,6 +711,9 @@
             const listContainer = document.getElementById('summary-items-list');
             listContainer.innerHTML = '';
 
+            // 备份当前单据内容用于自动文本复制
+            completedOrderList = [...cart];
+
             cart.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'summary-item';
@@ -706,6 +732,40 @@
         }
 
         function closeSummaryModal() { document.getElementById('summary-modal').classList.remove('active'); }
+
+        /* ==========================================================================
+           微信 / Ins 快捷跳转逻辑
+           ========================================================================== */
+        function jumpToWeChat() {
+            // 生成文本菜单
+            let orderText = `🍷 Peyser's Bistro 点单明细：\n`;
+            completedOrderList.forEach((item, i) => {
+                orderText += `${i + 1}. ${item.name} (${item.flavor})\n`;
+            });
+
+            // 复制文本至剪贴板
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(orderText).then(() => {
+                    showToast('已复制菜单明细，准备跳转微信');
+                }).catch(() => {});
+            }
+
+            // 尝试打开微信 APP 协议
+            setTimeout(() => {
+                window.location.href = 'weixin://';
+            }, 500);
+        }
+
+        function jumpToIns() {
+            showToast('准备跳转 Instagram');
+            setTimeout(() => {
+                // 优先深层协议跳转 App，失败时会自动被网页覆盖
+                window.location.href = 'instagram://app';
+                setTimeout(() => {
+                    window.location.href = 'https://www.instagram.com';
+                }, 1200);
+            }, 400);
+        }
 
         function showToast(msg) {
             const toast = document.getElementById('toast-notification');
